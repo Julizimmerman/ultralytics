@@ -72,7 +72,14 @@ from ultralytics.nn.modules import (
     YOLOESegment,
     YOLOESegment26,
     v10Detect,
+    SegmentEnhanced,
+    MultiScaleProto,
+    MaskRefiner,
+    SegmentAttention,
+    MaskedCrossAttention,
+    QueryMaskDecoder,
 )
+
 from ultralytics.utils import DEFAULT_CFG_DICT, LOGGER, YAML, colorstr, emojis
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
 from ultralytics.utils.loss import (
@@ -1661,6 +1668,8 @@ def parse_model(d, ch, verbose=True):
                 Segment26,
                 YOLOESegment,
                 YOLOESegment26,
+                SegmentEnhanced,
+                SegmentAttention,
                 Pose,
                 Pose26,
                 OBB,
@@ -1668,9 +1677,9 @@ def parse_model(d, ch, verbose=True):
             }
         ):
             args.extend([reg_max, end2end, [ch[x] for x in f]])
-            if m is Segment or m is YOLOESegment or m is Segment26 or m is YOLOESegment26:
+            if m in {Segment, YOLOESegment, Segment26, YOLOESegment26, SegmentEnhanced, SegmentAttention}:
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
-            if m in {Detect, YOLOEDetect, Segment, Segment26, YOLOESegment, YOLOESegment26, Pose, Pose26, OBB, OBB26}:
+            if m in {Detect, YOLOEDetect, Segment, Segment26, YOLOESegment, YOLOESegment26, SegmentEnhanced, SegmentAttention, Pose, Pose26, OBB, OBB26}:
                 m.legacy = legacy
         elif m is v10Detect:
             args.append([ch[x] for x in f])

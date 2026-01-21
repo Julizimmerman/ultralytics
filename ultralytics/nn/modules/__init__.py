@@ -106,6 +106,18 @@ from .transformer import (
     TransformerLayer,
 )
 
+from .head_enhanced import (
+    SegmentEnhanced, 
+    MultiScaleProto, 
+    MaskRefiner
+)
+
+from .head_attention import (
+    SegmentAttention, 
+    MaskedCrossAttention, 
+    QueryMaskDecoder
+)
+
 __all__ = (
     "AIFI",
     "C1",
@@ -187,4 +199,10 @@ __all__ = (
     "YOLOESegment",
     "YOLOESegment26",
     "v10Detect",
+    "SegmentEnhanced",
+    "MultiScaleProto",
+    "MaskRefiner",
+    "SegmentAttention",
+    "MaskedCrossAttention",
+    "QueryMaskDecoder",
 )
