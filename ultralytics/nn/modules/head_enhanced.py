@@ -14,11 +14,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import copy
 
-# Importaciones de Ultralytics (ajustar según tu instalación)
-# from ultralytics.nn.modules.conv import Conv
-# from ultralytics.nn.modules.block import Proto
-# from ultralytics.nn.modules.head import Detect
-
 # ==============================================================================
 # Módulos auxiliares (para que el archivo sea autocontenido)
 # En producción, importarías estos de ultralytics.nn.modules
@@ -55,7 +50,7 @@ def autopad(k, p=None):
 
 
 # ==============================================================================
-# MEJORA B: Módulo de Prototipos Multi-Escala
+# MEJORA: Módulo de Prototipos Multi-Escala
 # ==============================================================================
 
 class MultiScaleProto(nn.Module):
@@ -150,7 +145,7 @@ class MultiScaleProto(nn.Module):
 
 
 # ==============================================================================
-# MEJORA C: Módulo de Refinamiento de Máscaras
+# MEJORA: Módulo de Refinamiento de Máscaras
 # ==============================================================================
 
 class MaskRefiner(nn.Module):
@@ -248,7 +243,7 @@ class MaskRefiner(nn.Module):
 
 
 # ==============================================================================
-# CABEZA PRINCIPAL: SegmentEnhanced (combina mejoras A, B y C)
+# CABEZA PRINCIPAL: SegmentEnhanced (combina las tres mejoras)
 # ==============================================================================
 
 class SegmentEnhanced(nn.Module):
@@ -474,7 +469,7 @@ class DFL(nn.Module):
 
 
 # ==============================================================================
-# Ejemplo de uso y testing
+# Uso y testing
 # ==============================================================================
 
 if __name__ == "__main__":
