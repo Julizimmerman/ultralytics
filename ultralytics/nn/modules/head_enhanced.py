@@ -1456,55 +1456,65 @@ class SegmentEnhanced(nn.Module):
         else:
             self.coeff_attention = None
             
-    def forward(self, x: list) -> tuple:
+    def forward(self, x: list) -> tuple | dict:
         """
         Forward pass de la cabeza de segmentación mejorada.
-        
+
         Args:
             x: Lista de feature maps de diferentes escalas
                [P3 (B, C0, H0, W0), P4 (B, C1, H1, W1), P5 (B, C2, H2, W2)]
-        
+
         Returns:
-            Durante entrenamiento: (predicciones_detección, coeficientes_máscara, prototipos)
-            Durante inferencia: Similar pero formateado para post-procesamiento
+            Durante entrenamiento: dict con keys: boxes, scores, mask_coefficient, proto, feats
+            Durante inferencia: tuple (detecciones_concatenadas, dict_con_proto_y_coefs)
         """
         # Guardar features originales para proto y refiner
         features_for_proto = [xi.clone() for xi in x]
-        
+
         # =====================================================================
-        # Parte de Detección
+        # Parte de Detección (seguir formato de Detect.forward_head)
         # =====================================================================
-        
-        for i in range(self.nl):
-            x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
-        
+
+        bs = features_for_proto[0].shape[0]
+
+        # Obtener predicciones de bbox y clase
+        boxes = torch.cat([self.cv2[i](features_for_proto[i]).view(bs, 4 * self.reg_max, -1) for i in range(self.nl)], dim=-1)
+        scores = torch.cat([self.cv3[i](features_for_proto[i]).view(bs, self.nc, -1) for i in range(self.nl)], dim=-1)
+
         # =====================================================================
         # Parte de Segmentación Mejorada
         # =====================================================================
-        
+
         # MEJORA B: Generar prototipos con UNet
         proto = self.proto(features_for_proto)  # (B, nm, H*2, W*2)
-        
-        bs = proto.shape[0]
-        
+
         # Obtener coeficientes de máscara de cada escala
         mc = torch.cat(
-            [self.cv4[i](features_for_proto[i]).view(bs, self.nm, -1) for i in range(self.nl)], 
+            [self.cv4[i](features_for_proto[i]).view(bs, self.nm, -1) for i in range(self.nl)],
             dim=2
         )  # (B, nm, num_anchors_total)
-        
+
         # MEJORA E: Refinar coeficientes con atención sobre prototipos
         if self.use_coeff_attention and self.coeff_attention is not None:
             mc = self.coeff_attention(mc, proto)
-        
+
         # =====================================================================
         # Retornar según modo
         # =====================================================================
-        
+
         if self.training:
-            return x, mc, proto
-        
-        return (torch.cat([xi.view(bs, self.no, -1) for xi in x], dim=2), mc, proto)
+            # Durante entrenamiento, retornar dict con formato esperado por v8SegmentationLoss
+            return {
+                "boxes": boxes,  # (B, 4*reg_max, num_anchors)
+                "scores": scores,  # (B, nc, num_anchors)
+                "mask_coefficient": mc,  # (B, nm, num_anchors)
+                "proto": proto,  # (B, nm, H, W)
+                "feats": features_for_proto,  # List of features
+            }
+
+        # Durante inferencia: concatenar boxes+scores para formato de salida
+        x_cat = torch.cat([boxes, scores], dim=1)  # (B, 4*reg_max + nc, num_anchors)
+        return (x_cat, mc, proto)
     
     def apply_refinement(
         self, 
