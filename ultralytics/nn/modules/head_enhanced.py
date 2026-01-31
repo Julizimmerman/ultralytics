@@ -1377,6 +1377,7 @@ class SegmentEnhanced(nn.Module):
         self.use_refiner = use_refiner
         self.no = nc + reg_max * 4
         self.end2end = end2end
+        self.stride = torch.zeros(self.nl)  # strides computed during build
         
         # =====================================================================
         # Componentes de DETECCIÓN (similar a Detect)
