@@ -272,7 +272,7 @@ class SegmentEnhanced(nn.Module):
     max_det = 300
     shape = None
     anchors = torch.empty(0)
-    strides = torch.empty(0)
+    stride = torch.empty(0)
     legacy = False
     
     def __init__(
