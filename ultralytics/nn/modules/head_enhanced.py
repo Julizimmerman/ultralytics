@@ -359,7 +359,7 @@ class SegmentEnhanced(nn.Module):
             )
         else:
             self.refiner = None
-            
+
     def forward(self, x: list) -> tuple:
         """
         Forward pass de la cabeza de segmentación mejorada.
@@ -375,49 +375,31 @@ class SegmentEnhanced(nn.Module):
         # =====================================================================
         # Parte de Detección
         # =====================================================================
-        
-        shape = x[0].shape  # (B, C, H, W)
+
+        shape = x[0].shape
+
+        # Guardar features originales ANTES de que el loop las modifique
+        original_features = [xi.clone() for xi in x]
         
         # Obtener predicciones de bbox y clase de cada escala
         for i in range(self.nl):
             x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+
+        # Usar features originales para el proto
+        proto = self.proto(original_features)
         
-        # =====================================================================
-        # Parte de Segmentación Mejorada
-        # =====================================================================
-        
-        # Guardar features originales para el refinador
-        features_for_refiner = x[0] if self.use_refiner else None
-        
-        # MEJORA B: Generar prototipos multi-escala
-        # Necesitamos las features originales, no las modificadas
-        # Por eso guardamos una referencia antes de modificar x
-        proto = self.proto(x)  # (B, nm, H*2, W*2)
-        
-        bs = proto.shape[0]  # batch size
-        
-        # Obtener coeficientes de máscara de cada escala
+        bs = proto.shape[0]
+
         mc = torch.cat(
             [self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)], 
             dim=2
-        )  # (B, nm, num_anchors_total)
-        
-        # =====================================================================
-        # Durante entrenamiento, retornar componentes separados
-        # =====================================================================
-        
+        )
+
         if self.training:
             return x, mc, proto
-        
-        # =====================================================================
-        # Durante inferencia, aplicar refinamiento si está habilitado
-        # =====================================================================
-        
-        # Nota: El refinamiento completo se aplica típicamente en post-procesamiento
-        # cuando ya tenemos las máscaras individuales por objeto.
-        # Aquí retornamos los componentes necesarios.
-        
+
         return (torch.cat([xi.view(bs, self.no, -1) for xi in x], dim=2), mc, proto)
+            
     
     def apply_refinement(
         self, 
