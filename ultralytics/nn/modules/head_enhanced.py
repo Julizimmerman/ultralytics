@@ -83,16 +83,19 @@ class MultiScaleProto(nn.Module):
         self.num_scales = len(ch)
         
         # Proyección para cada escala a un espacio común
+        proj_ch = c_ // self.num_scales
+        actual_total = proj_ch * self.num_scales  # 510, no 512
+
         self.scale_projs = nn.ModuleList([
-            Conv(ch[i], c_ // self.num_scales, k=1) for i in range(self.num_scales)
+            Conv(ch[i], proj_ch, k=1) for i in range(self.num_scales)
         ])
-        
+
         # Upsampling para alinear todas las escalas a la resolución más alta
         # (las escalas más pequeñas se upsamplearán)
         
         # Fusión de escalas
         self.fusion = nn.Sequential(
-            Conv(c_, c_, k=3),
+            Conv(actual_total, c_, k=3),  # entrada = canales reales concatenados
             Conv(c_, c_, k=3),
         )
         
